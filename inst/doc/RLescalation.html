@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Kentaro Matsuura" />
+
+<meta name="date" content="2025-01-09" />
+
+<title>Optimal Dose Escalation Using Deep Reinforcement Learning</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Optimal Dose Escalation Using Deep
+Reinforcement Learning</h1>
+<h4 class="author">Kentaro Matsuura</h4>
+<h4 class="date">2025-01-09</h4>
+
+
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+<div id="rlescalation" class="section level1">
+<h1>RLescalation
+<img role="img" src="man/figures/logo.png" align="right" width="120" /></h1>
+<!-- badges: start -->
+<!-- badges: end -->
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>The purpose of this <code>RLescalation</code> package is to easily
+construct an dose escalation rule that directly optimizes the
+percentages of correct selection (PCS) of MTDs. Several high-level
+functions are also provided to make it easy to perform simulation
+studies.</p>
+</div>
+<div id="installation" class="section level2">
+<h2>Installation</h2>
+<p>You can install the stable version from CRAN as follows.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;RLescalation&quot;</span>)</span></code></pre></div>
+<p>You can install the development version from GitHub as follows.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># install.packages(&quot;remotes&quot;)</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;MatsuuraKentaro/RLescalation&quot;</span>)</span></code></pre></div>
+</div>
+</div>
+<div id="example" class="section level1">
+<h1>Example</h1>
+<p>We demonstrate computing an optimal dose escalation by reinforcement
+learning for the example in Sect. 3 of <a href="https://doi.org/10.1080/10543406.2023.2170402">the original
+paper</a>.</p>
+<p>When you load <code>RLescalation</code> as follows, Python itself and
+the Python packages to conduct reinforcement learning will be
+installed.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(RLescalation)</span></code></pre></div>
+<div id="learn-a-dose-escalation-rule" class="section level2">
+<h2>Learn a dose escalation rule</h2>
+<p>We obtain an optimal dose escalation rule by executing
+<code>learn_escalation_rule()</code> with the number of doses
+<code>J</code> and the target DLT probability <code>target</code>
+(please see <code>help(&quot;learn_escalation_rule&quot;)</code> for other
+arguments).</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>escalation_rule <span class="ot">&lt;-</span> <span class="fu">learn_escalation_rule</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">J =</span> <span class="dv">6</span>, <span class="at">target =</span> <span class="fl">0.25</span>, <span class="at">epsilon =</span> <span class="fl">0.04</span>, <span class="at">delta =</span> <span class="fl">0.1</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">N_total =</span> <span class="dv">36</span>, <span class="at">N_cohort =</span> <span class="dv">3</span>, <span class="at">seed =</span> <span class="dv">123</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">rl_config =</span> <span class="fu">rl_config_set</span>(<span class="at">iter =</span> <span class="dv">1000</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>)</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>escalation_rule</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; &lt;EscalationRule&gt;</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; dir: escalation_rules/20250101_162633</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; created at: 2025-01-01 17:43:23</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; call:</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; learn_escalation_rule(J = 6, target = 0.25, epsilon = 0.04, delta = 0.1, </span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt;     N_total = 36, N_cohort = 3, seed = 123, rl_config = rl_config_set(iter = 1000))</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; iterations: 1000</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt; checkpoints: 500, 600, 700, 800, 900, 1000</span></span></code></pre></div>
+<p>With the default settings, it takes roughly 5-20 seconds per iter, so
+it would take about 1.5-6 hours when <code>iter = 1000</code>.</p>
+</div>
+<div id="how-to-use-the-escalation-rule" class="section level2">
+<h2>How to use the escalation rule</h2>
+<p>To compute optimal action using the obtained escalation rule, pass
+the current dose index (i.e., one of <code>1</code>, <code>2</code>, …,
+<code>J</code>) and data of the number of assigned patients and DLTs for
+each dose to <code>opt_action()</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>current_dose <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>some_Ns   <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">6</span>, <span class="dv">3</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>some_DLTs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>escalation_rule<span class="sc">$</span><span class="fu">opt_action</span>(current_dose, some_Ns, some_DLTs)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; [1] &quot;up&quot;</span></span></code></pre></div>
+<p>If the returned action is <code>MTD_1</code>, …, <code>MTD_J</code>,
+or <code>no_MTD</code> (stop the trial because of toxicity), it means
+the end of the trial.</p>
+</div>
+<div id="how-to-evaluate-the-escalation-rule" class="section level2">
+<h2>How to evaluate the escalation rule</h2>
+<p>A convenient high-level function (<code>simulate_one_trial</code>) is
+provided to evaluate the obtained escalation rule. The following is an
+example of code to perform a simulation study similar to Sect. 3 of the
+original paper.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>eval_scenarios <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="fu">c</span>(<span class="fl">0.04</span>, <span class="fl">0.05</span>, <span class="fl">0.09</span>, <span class="fl">0.14</span>, <span class="fl">0.15</span>, <span class="fl">0.24</span>),</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="fu">c</span>(<span class="fl">0.07</span>, <span class="fl">0.16</span>, <span class="fl">0.23</span>, <span class="fl">0.27</span>, <span class="fl">0.34</span>, <span class="fl">0.55</span>),</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">c</span>(<span class="fl">0.34</span>, <span class="fl">0.42</span>, <span class="fl">0.46</span>, <span class="fl">0.49</span>, <span class="fl">0.58</span>, <span class="fl">0.62</span>),</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.08</span>, <span class="fl">0.11</span>, <span class="fl">0.15</span>, <span class="fl">0.60</span>, <span class="fl">0.72</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>)</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>n_sim <span class="ot">&lt;-</span> <span class="dv">1000</span>  <span class="co"># the number of simulated clinical trials</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>sim_list <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="cf">for</span> (scenarioID <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">length</span>(eval_scenarios))) {</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  prob_true <span class="ot">&lt;-</span> eval_scenarios[[scenarioID]]</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="cf">for</span> (simID <span class="cf">in</span> <span class="fu">seq_len</span>(n_sim)) {</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>    sim_one <span class="ot">&lt;-</span> <span class="fu">simulate_one_trial</span>(escalation_rule, prob_true, <span class="at">seed =</span> simID)</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>    sim_list[[<span class="fu">length</span>(sim_list) <span class="sc">+</span> <span class="dv">1</span>]] <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>      <span class="at">scenarioID =</span> scenarioID, <span class="at">simID =</span> simID, sim_one, <span class="at">check.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  }</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>}</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>d_sim <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, sim_list)</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="fu">head</span>(d_sim, <span class="dv">13</span>)</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt;    scenarioID simID cohortID dose N DLT recommended</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt; 1           1     1        1    1 3   0          up</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; 2           1     1        2    2 3   0          up</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; 3           1     1        3    3 3   0          up</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; 4           1     1        4    4 3   1          up</span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; 5           1     1        5    5 3   0          up</span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; 6           1     1        6    6 3   2        stay</span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; 7           1     1        7    6 3   2        stay</span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; 8           1     1        8    6 3   1        stay</span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt; 9           1     1        9    6 3   1        stay</span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt; 10          1     1       10    6 3   0        stay</span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt; 11          1     1       11    6 3   0        stay</span></span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="co">#&gt; 12          1     1       12    6 3   0       MTD_6</span></span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a><span class="co">#&gt; 13          1     2        1    1 3   0          up</span></span></code></pre></div>
+<p>The following code is an example of calculating the PCS.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>MTD_true <span class="ot">&lt;-</span>  <span class="fu">list</span>(<span class="st">&quot;MTD_6&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;MTD_3&quot;</span>, <span class="st">&quot;MTD_4&quot;</span>), <span class="st">&quot;no_MTD&quot;</span>, <span class="st">&quot;MTD_4&quot;</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>d_res <span class="ot">&lt;-</span> d_sim <span class="sc">|&gt;</span> </span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="fu">filter</span>(cohortID <span class="sc">==</span> <span class="fu">max</span>(cohortID), <span class="at">.by =</span> <span class="fu">c</span>(scenarioID, simID)) <span class="sc">|&gt;</span> </span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">|&gt;</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">correct =</span> <span class="fu">if_else</span>(recommended <span class="sc">%in%</span> MTD_true[[scenarioID]], <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">PCS =</span> <span class="fu">mean</span>(correct), <span class="at">.by =</span> scenarioID)</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>d_res</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 × 2</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt;   scenarioID   PCS</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt;        &lt;int&gt; &lt;dbl&gt;</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; 1          1 0.833</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt; 2          2 0.731</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt; 3          3 0.411</span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt; 4          4 0.531</span></span></code></pre></div>
+</div>
+</div>
+<div id="tips" class="section level1">
+<h1>Tips</h1>
+<div id="custom-scenarios-for-reinforcement-learning" class="section level2">
+<h2>Custom scenarios for reinforcement learning</h2>
+<p>If you want to use custom scenarios for reinforcement learning, you
+can pass the custom scenarios by specifying the argument
+<code>rl_scenarios</code> in <code>learn_escalation_rule</code>
+function.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>my_scenarios <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">prob =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.11</span>, <span class="fl">0.25</span>, <span class="fl">0.31</span>, <span class="fl">0.32</span>, <span class="fl">0.40</span>), </span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>              <span class="fu">c</span>(<span class="fl">0.23</span>, <span class="fl">0.27</span>, <span class="fl">0.45</span>, <span class="fl">0.47</span>, <span class="fl">0.50</span>, <span class="fl">0.57</span>),</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>              <span class="fu">c</span>(<span class="fl">0.38</span>, <span class="fl">0.40</span>, <span class="fl">0.43</span>, <span class="fl">0.47</span>, <span class="fl">0.51</span>, <span class="fl">0.55</span>)),</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">MTD =</span> <span class="fu">list</span>(<span class="dv">3</span>, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="sc">-</span><span class="dv">1</span>),  <span class="co"># -1 means &quot;no MTD&quot;</span></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">weight =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>escalation_rule <span class="ot">&lt;-</span> <span class="fu">learn_escalation_rule</span>(</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  <span class="at">J =</span> <span class="dv">6</span>, <span class="at">target =</span> <span class="fl">0.25</span>, <span class="at">epsilon =</span> <span class="fl">0.04</span>, <span class="at">delta =</span> <span class="fl">0.1</span>,</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  <span class="at">N_total =</span> <span class="dv">36</span>, <span class="at">N_cohort =</span> <span class="dv">3</span>, <span class="at">seed =</span> <span class="dv">123</span>,</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  <span class="at">rl_config =</span> <span class="fu">rl_config_set</span>(<span class="at">iter =</span> <span class="dv">1000</span>),</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>  <span class="at">rl_scenarios =</span> my_scenarios</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>)</span></code></pre></div>
+<p>See the return of <code>compute_rl_scenarios()</code> for
+details.</p>
+</div>
+<div id="what-to-do-if-the-learning-is-unstable" class="section level2">
+<h2>What to do if the learning is unstable</h2>
+<p>If an error occurs during reinforcement learning, please try the
+following.</p>
+<ul>
+<li>Use <code>checkpoint</code> before the error (see below)</li>
+<li>Change <code>seed</code> in
+<code>learn_escalation_rule()</code></li>
+<li>Try Linux or WSL instead of Windows because Ray on Windows is
+currently in beta</li>
+<li>Reduce <code>sgd_minibatch_size</code> in
+<code>rl_config_set()</code> to <code>100L</code></li>
+</ul>
+<p>The obtained dose escalation rules may overfit some scenarios, so
+that the MTD cannot be estimated correctly at all in some other
+scenarios. In such cases, please try the following.</p>
+<ul>
+<li>Change <code>checkpoint</code> (see below)</li>
+<li>Change <code>seed</code> in
+<code>learn_escalation_rule()</code></li>
+<li>Try custom scenarios</li>
+</ul>
+</div>
+<div id="how-to-use-escalation-rule-class" class="section level2">
+<h2>How to use Escalation Rule Class</h2>
+<p>The <code>escalation_rule</code> above is an object of the Escalation
+Rule Class (R6). Here is a brief explanation of how to use it.</p>
+<div id="save-the-escalation-rule" class="section level3">
+<h3>Save the escalation rule</h3>
+<p>The obtained escalation rule can be saved using <code>saveRDS</code>,
+a standard R function.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">saveRDS</span>(escalation_rule, <span class="at">file =</span> <span class="st">&quot;escalation_rule.RDS&quot;</span>)</span></code></pre></div>
+<p>To load it, use <code>readRDS</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>escalation_rule <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">&quot;escalation_rule.RDS&quot;</span>)</span></code></pre></div>
+</div>
+<div id="inputs-of-learn_escalation_rule-function" class="section level3">
+<h3>Inputs of <code>learn_escalation_rule</code> function</h3>
+<p>The inputs passed to the <code>learn_escalation_rule</code> function
+can be retrieved as follows.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>escalation_rule<span class="sc">$</span>input</span></code></pre></div>
+</div>
+<div id="obtain-returns-during-reinforcement-learning" class="section level3">
+<h3>Obtain returns during reinforcement learning</h3>
+<p>The statistics of returns during reinforcement learning can be
+retrieved as follows.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>escalation_rule<span class="sc">$</span>log</span></code></pre></div>
+</div>
+<div id="resume-learning" class="section level3">
+<h3>Resume learning</h3>
+<p>Reinforcement learning can be resumed with the following
+function.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>escalation_rule<span class="sc">$</span><span class="fu">resume_learning</span>(<span class="at">iter =</span> <span class="dv">100</span>)</span></code></pre></div>
+</div>
+<div id="use-checkpoint" class="section level3">
+<h3>Use checkpoint</h3>
+<p>Multiple checkpoints are created by
+<code>learn_escalation_rule</code> function. By default, the last
+checkpoint is used to build an escalation rule. If you want to build
+another escalation rule using another checkpoint, specify the directory
+name created by <code>learn_escalation_rule</code> function as
+follows.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>another_escalation_rule <span class="ot">&lt;-</span> EscalationRule<span class="sc">$</span><span class="fu">new</span>(<span class="at">dir =</span> <span class="st">&quot;checkpoints/20250101_162633_00900&quot;</span>)</span></code></pre></div>
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
