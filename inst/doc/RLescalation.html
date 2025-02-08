@@ -12,7 +12,7 @@
 
 <meta name="author" content="Kentaro Matsuura" />
 
-<meta name="date" content="2025-01-09" />
+<meta name="date" content="2025-02-08" />
 
 <title>Optimal Dose Escalation Using Deep Reinforcement Learning</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h1 class="title toc-ignore">Optimal Dose Escalation Using Deep
 Reinforcement Learning</h1>
 <h4 class="author">Kentaro Matsuura</h4>
-<h4 class="date">2025-01-09</h4>
+<h4 class="date">2025-02-08</h4>
 
 
 
@@ -355,9 +355,9 @@ Reinforcement Learning</h1>
 <h2>Overview</h2>
 <p>The purpose of this <code>RLescalation</code> package is to easily
 construct an dose escalation rule that directly optimizes the
-percentages of correct selection (PCS) of MTDs. Several high-level
-functions are also provided to make it easy to perform simulation
-studies.</p>
+percentages of correct selection (PCS) of the maximum tolerated dose
+(MTD). Several high-level functions are also provided to make it easy to
+perform simulation studies.</p>
 </div>
 <div id="installation" class="section level2">
 <h2>Installation</h2>
@@ -462,7 +462,7 @@ original paper.</p>
 <p>The following code is an example of calculating the PCS.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>MTD_true <span class="ot">&lt;-</span>  <span class="fu">list</span>(<span class="st">&quot;MTD_6&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;MTD_3&quot;</span>, <span class="st">&quot;MTD_4&quot;</span>), <span class="st">&quot;no_MTD&quot;</span>, <span class="st">&quot;MTD_4&quot;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>MTD_true <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="st">&quot;MTD_6&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;MTD_3&quot;</span>, <span class="st">&quot;MTD_4&quot;</span>), <span class="st">&quot;no_MTD&quot;</span>, <span class="st">&quot;MTD_4&quot;</span>)</span>
 <span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
 <span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>d_res <span class="ot">&lt;-</span> d_sim <span class="sc">|&gt;</span> </span>
 <span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="fu">filter</span>(cohortID <span class="sc">==</span> <span class="fu">max</span>(cohortID), <span class="at">.by =</span> <span class="fu">c</span>(scenarioID, simID)) <span class="sc">|&gt;</span> </span>

@@ -1,7 +1,7 @@
 Package: RLescalation
 Type: Package
 Title: Optimal Dose Escalation Using Deep Reinforcement Learning
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: c(
     person("Kentaro", "Matsuura", , "matsuurakentaro55@gmail.com", 
            role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0001-5262-055X")))
@@ -24,9 +24,9 @@ Collate: 'timer.R' 'train_algo.R' 'utils.R' 'escalation_rule.R'
         'learn_escalation_rule.R' 'setup_python.R' 'zzz.R'
         'simulate_one_trial.R'
 NeedsCompilation: no
-Packaged: 2025-01-09 06:02:07 UTC; kmatsuu
+Packaged: 2025-02-08 01:17:03 UTC; kmatsuu
 Author: Kentaro Matsuura [aut, cre, cph]
     (<https://orcid.org/0000-0001-5262-055X>)
 Maintainer: Kentaro Matsuura <matsuurakentaro55@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-01-09 18:10:05 UTC
+Date/Publication: 2025-02-08 03:10:02 UTC

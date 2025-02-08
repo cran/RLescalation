@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# RLescalation
+# RLescalation <img src="man/figures/logo.png" align="right" width="120" />
 
 <!-- badges: start -->
 
@@ -14,8 +14,9 @@
 
 The purpose of this `RLescalation` package is to easily construct an
 dose escalation rule that directly optimizes the percentages of correct
-selection (PCS) of MTDs. Several high-level functions are also provided
-to make it easy to perform simulation studies.
+selection (PCS) of the maximum tolerated dose (MTD). Several high-level
+functions are also provided to make it easy to perform simulation
+studies.
 
 ## Installation
 
@@ -141,7 +142,7 @@ The following code is an example of calculating the PCS.
 ``` r
 library(dplyr)
 
-MTD_true <-  list("MTD_6", c("MTD_3", "MTD_4"), "no_MTD", "MTD_4")
+MTD_true <- list("MTD_6", c("MTD_3", "MTD_4"), "no_MTD", "MTD_4")
 
 d_res <- d_sim |> 
   filter(cohortID == max(cohortID), .by = c(scenarioID, simID)) |> 
